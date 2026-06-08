@@ -1,17 +1,19 @@
 # su26-ai301-contribution
 
-# Contribution [#]: [Issue Title]
+# Contribution 1: examples/url-shortener: CRUD + Taskiq cleanup worker
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** 1  
+**Student:** Ayush Dodia  
+**Issue:** https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/94  
+**Status:** Phase I Complete
 
 ---
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+I chose issue #94 to build a URL shortener domain featuring standard CRUD endpoints and a Taskiq background worker that automatically sweeps and deletes expired links. The problem requires mapping out a new domain using FastAPI and integrating async background jobs without the scope creep of analytics or routing redirects.
+
+This issue aligns perfectly with my backend experience in Python and FastAPI. It offers a clearly bounded scope and provides an excellent opportunity to learn and navigate a professional, DDD-layered open-source architecture by studying and replicating the repository's existing worker patterns. I have left a comment on the issue stating my intent to work on it, and I am preparing to set up the local environment.
 
 ---
 
