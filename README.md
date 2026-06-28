@@ -3,7 +3,7 @@
 **Contribution Number:** 1
 **Student:** Ayush Dodia
 **Issue:** Mr-DooSun/fastapi-agent-blueprint#94
-**Status:** Merged (Phase III & IV Complete)
+**Status:** Merged (Phase IV Complete)
 
 ## Why I Chose This Issue
 I chose issue #94 to build a URL shortener domain featuring standard CRUD endpoints and a Taskiq background worker that automatically sweeps and deletes expired links. The problem requires mapping out a new domain using FastAPI and integrating async background jobs without the scope creep of analytics or routing redirects.
