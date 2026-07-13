@@ -5,7 +5,7 @@
 **Contribution Number:** 2  
 **Student:** Ayush Dodia  
 **Issue:** https://github.com/Mr-DooSun/fastapi-agent-blueprint/issues/3  
-**Status:** Phase I Complete
+**Status:** Phase II Complete
 
 ---
 
@@ -47,19 +47,20 @@ This is an infrastructure addition. It will primarily involve:
 
 ### Environment Setup
 
-[To be completed in Phase II]
+A common challenge when setting up load-testing tools is resolving dependency conflicts with existing local servers. However, I resolved this proactively by utilizing my pre-existing `uv` environment from a previous contribution and verifying the maintainer's note that `locust` was safely isolated in the `dev` dependency group. I ran `make setup` to ensure all dependencies were fresh, avoiding any need for additional installation steps.
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+Because this is a feature addition for missing infrastructure rather than a bug, reproduction involves verifying the absence of the tooling and ensuring the target server runs successfully:
+1. Run `make quickstart` in the terminal to start the zero-infra local server and SQLite database.
+2. Open a second terminal and search for a performance testing target by running `make perf-test`.
+3. **Expected:** A Locust load-testing script executes against the local server.
+4. **Actual:** The terminal returns `make: *** No rule to make target 'perf-test'.  Stop.`, confirming the infrastructure is currently missing.
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Working Branch:** https://github.com/Ayushhh26/fastapi-agent-blueprint/tree/feat/locust-perf-testing
+- **My findings:** The local development sandbox initializes cleanly on `http://127.0.0.1:8001`. The `locust` CLI is accessible in the virtual environment (`locust -V` works), meaning I am unblocked to write the test script and `Makefile` target.
 
 ---
 
@@ -67,30 +68,33 @@ This is an infrastructure addition. It will primarily involve:
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+The repository requires a highly portable, zero-configuration performance testing harness. Because the repository is a "blueprint" for external adopters, the code needs to serve as an educational, ready-to-adapt harness rather than generating authoritative production numbers.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+I will build a headless Locust test suite targeting the `/v1/user` endpoints. I will define an `HttpUser` class that handles authentication and executes a mix of CRUD operations and concurrent requests. Finally, I will wire this script into the `Makefile` so it can be executed with a single command.
 
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [Restate the problem]
+**Understand:** The codebase lacks a standardized way to measure API throughput and response times under load. It needs a lightweight Locust integration that targets the local development server.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:** This mirrors standard SRE and DevOps load-testing patterns. I will utilize Locust's `HttpUser` class, taking advantage of the `on_start` method to handle API authentication flows before executing repeated `@task` methods.
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+**Plan:**
+1. Create `tests/perf/locustfile.py`.
+2. Write an `on_start` method to register and log in a simulated user, storing the JWT token in the client session headers.
+3. Write tasks (`@task`) that perform CRUD operations (GET/POST) against `/v1/user`.
+4. Update the `Makefile` with a new target: `perf-test: \n\t locust -f tests/perf/locustfile.py --headless -u 10 -r 2 -H http://127.0.0.1:8001`.
+5. Update `README.md` (or the relevant docs section) with a short guide on how to run the command and interpret the terminal table.
+6. **Edge Case Identification:** I will ensure the `on_start` authentication method caches the JWT token for the simulated user, rather than re-authenticating on every single request, which would artificially skew the performance metrics toward database read/write bottlenecks instead of standard API throughput.
 
-**Implement:** [Link to your branch/commits as you work]
+**Implement:** https://github.com/Ayushhh26/fastapi-agent-blueprint/tree/feat/locust-perf-testing
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+**Review:** I will self-review against the project's formatting guidelines (running `make check` for Ruff linting) and ensure the script strictly targets the quickstart environment without introducing external dependencies.
 
-**Evaluate:** [How will you verify it works?]
+**Evaluate:** I will execute `make quickstart` in one terminal and `make perf-test` in another. I will verify that Locust successfully authenticates, hits the endpoints with 200 OK responses, and outputs a complete performance metrics table in the terminal.
 
 ---
 
