@@ -1,3 +1,110 @@
+# Contribution 2: Locust Performance Testing Harness
+
+**Contribution Number:** 2
+**Student:** Ayush Dodia
+**Issue:** Mr-DooSun/fastapi-agent-blueprint#3
+**Status:** In Progress (Phase III Complete / Draft PR Opened)
+
+## Why I Chose This Issue
+I chose issue #3 because performance and load testing are critical skills for backend engineering. The issue required building a reusable, headless Locust testing harness to validate concurrent traffic on a FastAPI application. It presented a great opportunity to learn about system architecture, API authentication constraints, and creating tools that prioritize a seamless Developer Experience (DX) without adding unnecessary CI overhead. 
+
+## Understanding the Issue
+
+### Problem Description
+The repository needed a local performance testing harness to ensure the API can handle concurrent read and write flows. The maintainer explicitly requested a headless `make perf-test` target utilizing Locust that hits `/health` endpoints and authenticated `/v1/user` CRUD routes, while keeping the tool local-only and completely out of the CI pipeline.
+
+### Expected Behavior
+A `tests/perf/locustfile.py` script containing:
+1. An always-on concurrent read flow (hitting `/health` and `/health/db`).
+2. An authenticated CRUD flow against `/v1/user` that properly handles JWTs and cleans up its own database records.
+3. A `make perf-test` command to execute the tests headlessly with configurable defaults.
+
+### Current Behavior
+Not applicable (new infrastructure addition). 
+
+### Affected Components
+This is a new tooling addition affecting local development operations. It requires creating `tests/perf/locustfile.py`, updating the root `Makefile`, and adding operational documentation to `docs/operations/performance-locust.md`.
+
+## Reproduction Process
+
+### Environment Setup
+I pulled the latest `main` branch, created my `feat/locust-perf-testing` branch, and ran `make setup` followed by `make quickstart` to initialize the local SQLite database and spin up the API on port 8001.
+
+### Steps to Reproduce
+1. Attempted to hit the `/v1/user` endpoints using the default `admin/admin` credentials provided by the quickstart environment.
+2. Traced the API routing and dependency injection layers to understand how the JWT authentication was protecting the routes.
+
+### Reproduction Evidence
+**Findings:** By analyzing the backend architecture, I discovered that the default quickstart `admin` account is hard-coded with an `is_bootstrap_admin = True` flag. Attempting to use these credentials for the Locust `/v1/user` tests instantly crashes the API with a `403 Forbidden` error. I realized a real admin account requires a manual 3-step browser provisioning flow, which heavily informed my solution design.
+
+## Solution Approach
+
+### Analysis
+To prevent the harness from crashing for new developers who haven't manually configured an admin account, the Locust tests needed to be modular. I decided to split the load generation into an "always-on" Customer flow that works out-of-the-box, and an "env-gated" Admin flow that only executes if valid credentials are provided.
+
+### Proposed Solution
+1. Use Locust's `HttpUser` class to create a `CustomerAuthUser` and a `HealthCheckUser` that run automatically.
+2. Create an `AdminCrudUser` that reads from `LOCUST_ADMIN_USERNAME` and `PASSWORD` environment variables, setting the Locust `abstract = True` class property if they are missing so the test safely bypasses it.
+3. Add the `make perf-test` headless execution command and document the full baseline metrics.
+
+### Implementation Plan
+- **Understand:** Build a headless Locust harness that successfully navigates the dual-realm (Customer vs Admin) JWT authentication system without breaking the default developer experience.
+- **Match:** Use Locust's `on_start` hook for authentication and `abstract = True` for safe credential gating.
+- **Plan:**
+  1. Create `tests/perf/locustfile.py` with the split user classes.
+  2. Use `name="/v1/user/[id]"` in Locust requests to prevent metric explosion.
+  3. Add the `perf-test` target to the `Makefile`.
+  4. Write `docs/operations/performance-locust.md` with setup instructions and the baseline capture.
+- **Implement:** Write the code and execute `make check` to ensure Ruff formatting passes.
+- **Evaluate:** Run `make quickstart` and `make perf-test` to verify terminal output and zero-failure execution.
+
+## Testing Strategy
+
+### Unit / Automated Tests
+- Verified `tests/perf/locustfile.py` is safely ignored by `pytest` (due to naming conventions) and `mypy` (due to pre-commit config exclusions).
+- Formatted using `uv run ruff format` to ensure perfect CI style compliance.
+
+### Manual Testing
+- **Zero-Setup E2E:** Ran `make quickstart` followed by `make perf-test` with an empty `.env`. Verified the Customer and Health scenarios produced stats while the Admin scenario cleanly skipped itself.
+- **Negative Auth:** Supplied invalid admin credentials and confirmed the login failure appeared loudly in Locust's failure table (401 error) without crashing the other concurrent users.
+- **Baseline Capture:** Recorded an official local baseline of 341 total requests, 0 failures, 11.5 RPS, and a median latency of 3ms.
+
+## Implementation Notes
+
+### Week 3 Progress
+**What I built:**
+- Created `tests/perf/locustfile.py` implementing three scenarios: a zero-setup Customer Auth flow, a Health endpoint flow, and an environment-gated Admin CRUD flow.
+- Added a `perf-test` headless target to the `Makefile` with overridable default variables (`PERF_USERS`, `PERF_SPAWN_RATE`, `PERF_RUN_TIME`).
+- Drafted the operational documentation in `docs/operations/performance-locust.md` detailing the setup and output reading.
+
+**Challenges faced:**
+- **The Admin Auth Trap:** Realizing that the default `admin` account is hard-blocked from token generation meant I had to design the `abstract = True` fallback mechanism to protect the local developer experience.
+- **Governance Drift:** I actively chose *not* to update the repository's `.claude/rules/commands.md` file with the new Makefile target, as touching that file triggers an internal Tier B governance review. This kept the PR strictly scoped to the maintainer's original request.
+
+## Code Changes
+
+**Files modified:**
+- Added `tests/perf/locustfile.py`
+- Modified `Makefile`
+- Added `docs/operations/performance-locust.md`
+- Modified `docs/README.md` and `docs/reference.md` (roadmap updates)
+
+**Key commits:**
+- `feat: Implement Locust performance testing harness (#3)`
+
+**Approach decisions:**
+- Grouped dynamic endpoints using the Locust `name` parameter so the terminal output remains clean and readable, instead of creating a new row for every generated UUID.
+
+## Pull Request
+
+**Branch Link:** https://github.com/Ayushhh26/fastapi-agent-blueprint/tree/feat/locust-perf-testing
+**PR Link:** https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/293
+**PR Description:** Implements a headless Locust performance testing harness featuring zero-setup Customer flows and properly env-gated Admin CRUD flows to protect the developer experience. Includes a documented local baseline of 11.5 RPS.
+
+**Status:** Draft PR Opened (Awaiting self-review and maintainer feedback).
+
+---
+
 # Contribution 1: examples/url-shortener: CRUD + Taskiq cleanup worker
 
 **Contribution Number:** 1
