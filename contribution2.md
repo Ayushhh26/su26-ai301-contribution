@@ -3,7 +3,7 @@
 **Contribution Number:** 2
 **Student:** Ayush Dodia
 **Issue:** Mr-DooSun/fastapi-agent-blueprint#3
-**Status:** In Progress (Phase III Complete / Draft PR Opened)
+**Status:** Merged (Phase IV Complete)
 
 ## Why I Chose This Issue
 I chose issue #3 because performance and load testing are critical skills for backend engineering. The issue required building a reusable, headless Locust testing harness to validate concurrent traffic on a FastAPI application. It presented a great opportunity to learn about system architecture, API authentication constraints, and creating tools that prioritize a seamless Developer Experience (DX) without adding unnecessary CI overhead. 
@@ -91,6 +91,7 @@ To prevent the harness from crashing for new developers who haven't manually con
 
 **Key commits:**
 - `feat: Implement Locust performance testing harness (#3)`
+- `test: revoke admin refresh-token session on stop` (Code review fix)
 
 **Approach decisions:**
 - Grouped dynamic endpoints using the Locust `name` parameter so the terminal output remains clean and readable, instead of creating a new row for every generated UUID.
@@ -101,7 +102,29 @@ To prevent the harness from crashing for new developers who haven't manually con
 **PR Link:** https://github.com/Mr-DooSun/fastapi-agent-blueprint/pull/293
 **PR Description:** Implements a headless Locust performance testing harness featuring zero-setup Customer flows and properly env-gated Admin CRUD flows to protect the developer experience. Includes a documented local baseline of 11.5 RPS.
 
-**Status:** Draft PR Opened (Awaiting self-review and maintainer feedback).
+**Maintainer Feedback:**
+- **Initial Review:** The maintainer agreed with the split architecture, the `abstract` gating, and the decision to exclude the `.claude/rules/commands.md` drift to avoid governance reviews.
+- **Code Review Fix:** The maintainer caught a session leak where `AdminCrudUser` was not revoking its refresh token in the `on_stop` hook (leaving live admin sessions in the database). I added a logout POST request to mirror the customer logout flow, manually verified the database cleanup, and pushed the fix.
+
+**Status:** Merged!
+
+## Learnings & Reflections
+
+### Technical Skills Gained
+- **System Architecture & DX:** I learned how to balance rigorous load testing with Developer Experience (DX). By utilizing Locust's `abstract = True` property, I was able to build a tool that safely bypasses complex authentication requirements for unconfigured users, preventing local crashes.
+- **API Authentication Constraints:** I gained deep practical experience with dual-realm JWT authentication. Tracing the backend to discover that the bootstrap `admin` account was hard-coded to reject token generation (`is_bootstrap_admin = True`) taught me to never assume default test accounts have full system access.
+- **Session Lifecycle Management:** During code review, I learned the importance of proper teardown in load testing. Failing to explicitly revoke refresh tokens during a performance test can quickly bloat the database with orphaned sessions.
+- **Performance Profiling:** I learned how to establish a baseline performance metric (RPS, p50/p95/p99 latencies) and properly document it so future developers have a benchmark to compare their code against.
+
+### Challenges Overcome
+The biggest challenge was navigating the "Admin Auth Trap." I initially planned a straightforward test, but discovering the 3-step browser requirement for provisioning a real admin forced me to completely redesign the testing harness. I overcame this by splitting the tests into an always-on Customer flow and an env-gated Admin flow, proving that I can adapt my engineering plans when faced with strict system security constraints.
+
+### What I'd Do Differently Next Time
+Next time, I will trace the authentication middleware *before* writing my testing strategy, rather than doing it concurrently. Identifying hard-coded security flags (like `is_bootstrap_admin`) on day one would have saved me time in the planning phase.
+
+### Resources Used
+- Locust Official Documentation (specifically `HttpUser` and `on_start` lifecycle hooks).
+- Internal repository architecture guidelines for the dual-realm JWT implementation.
 
 ---
 
